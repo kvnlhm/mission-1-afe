@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import Button from '../components/Button';
-import { useCourseContext } from '../contexts/CourseContext';
+import { useUsers } from '../hooks/useUsers';
 
 const CourseCard = ({ course }) => {
   return (
@@ -47,7 +48,7 @@ const CourseCard = ({ course }) => {
 const HomePage = () => {
   const [selectedCategory, setSelectedCategory] = useState('Semua Kelas');
   const [email, setEmail] = useState('');
-  const { courses } = useCourseContext();
+  const { users: courses, loading, error } = useUsers();
   
   console.log('HomePage courses:', courses);
   
@@ -93,9 +94,20 @@ const HomePage = () => {
             <h2 className="text-3xl font-bold text-gray-800 mb-4">
               Koleksi Video Pembelajaran Unggulan
             </h2>
-            <p className="text-gray-600 text-lg">
+            <p className="text-gray-600 text-lg mb-4">
               Jelajahi Dunia Pengetahuan Melalui Pilihan Kami!
             </p>
+            <div className="flex justify-center items-center gap-4 mb-4">
+              <div className="bg-videobelajar-green text-white px-4 py-2 rounded-full">
+                <span className="font-semibold">{courses.length}</span> Kursus Tersedia
+              </div>
+              <Link 
+                to="/crud"
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full transition-colors"
+              >
+                Kelola Kursus
+              </Link>
+            </div>
           </div>
           
           {/* Category Tabs */}
@@ -116,11 +128,28 @@ const HomePage = () => {
           </div>
           
           {/* Course Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course) => (
-              <CourseCard key={course.id} course={course} />
-            ))}
-          </div>
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-videobelajar-green"></div>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded inline-block">
+                <strong>Error:</strong> {error}
+              </div>
+            </div>
+          ) : courses.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">Belum ada kursus yang tersedia</p>
+              <p className="text-gray-400 mt-2">Tambahkan kursus baru melalui halaman CRUD</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {courses.map((course) => (
+                <CourseCard key={course.id} course={course} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
       

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useCourseContext } from '../contexts/CourseContext';
+import { useUsers } from '../hooks/useUsers';
 
 const CrudPage = () => {
-  const { courses, addCourse, updateCourse, deleteCourse } = useCourseContext();
+  const { users, loading, error, addUser, updateUser, deleteUser } = useUsers();
   
   const [formData, setFormData] = useState({
     title: '',
@@ -26,30 +26,31 @@ const CrudPage = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (editingId) {
-      // Update existing course
-      updateCourse(editingId, formData);
-      setEditingId(null);
-    } else {
-      // Add new course
-      addCourse(formData);
+    try {
+      if (editingId) {
+        await updateUser(editingId, formData);
+        setEditingId(null);
+      } else {
+        await addUser(formData);
+      }
+      
+      setFormData({ 
+        title: '',
+        description: '',
+        instructor: '',
+        instructorTitle: '',
+        rating: '',
+        price: '',
+        image: '',
+        instructorImage: ''
+      });
+      setIsFormVisible(false);
+    } catch (err) {
+      console.error('Error saving course:', err);
     }
-    
-    // Reset form
-    setFormData({ 
-      title: '',
-      description: '',
-      instructor: '',
-      instructorTitle: '',
-      rating: '',
-      price: '',
-      image: '',
-      instructorImage: ''
-    });
-    setIsFormVisible(false);
   };
 
   const handleEdit = (course) => {
@@ -67,8 +68,14 @@ const CrudPage = () => {
     setIsFormVisible(true);
   };
 
-  const handleDelete = (id) => {
-    deleteCourse(id);
+  const handleDelete = async (id) => {
+    if (window.confirm('Apakah Anda yakin ingin menghapus kursus ini?')) {
+      try {
+        await deleteUser(id);
+      } catch (err) {
+        console.error('Error deleting course:', err);
+      }
+    }
   };
 
   const handleCancel = () => {
@@ -86,11 +93,28 @@ const CrudPage = () => {
     setIsFormVisible(false);
   };
 
+  if (loading && users.length === 0) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <p className="mt-2 text-gray-600">Memuat data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">
         Manajemen Data Kursus
       </h1>
+      
+      {error && (
+        <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <strong>Error:</strong> {error}
+        </div>
+      )}
       
       {/* Add Button */}
       <div className="mb-6">
@@ -236,9 +260,10 @@ const CrudPage = () => {
             <div className="flex space-x-3">
               <button
                 type="submit"
-                className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition duration-200"
+                disabled={loading}
+                className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition duration-200 disabled:opacity-50"
               >
-                {editingId ? 'Update' : 'Simpan'}
+                {loading ? 'Menyimpan...' : (editingId ? 'Update' : 'Simpan')}
               </button>
               <button
                 type="button"
@@ -279,14 +304,14 @@ const CrudPage = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {courses.length === 0 ? (
+              {users.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
                     Tidak ada data kursus
                   </td>
                 </tr>
               ) : (
-                courses.map((course) => (
+                users.map((course) => (
                   <tr key={course.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {course.id}
@@ -344,12 +369,12 @@ const CrudPage = () => {
       <div className="mt-8 bg-blue-50 rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-2">Statistik Data</h3>
         <p className="text-gray-700">
-          Total Kursus: <span className="font-bold">{courses.length}</span>
+          Total Kursus: <span className="font-bold">{users.length}</span>
         </p>
         <p className="text-gray-700">
           Rata-rata Rating: <span className="font-bold">
-            {courses.length > 0 
-              ? (courses.reduce((sum, c) => sum + parseFloat(c.rating), 0) / courses.length).toFixed(1)
+            {users.length > 0 
+              ? (users.reduce((sum, c) => sum + parseFloat(c.rating), 0) / users.length).toFixed(1)
               : 0}
           </span> / 5.0
         </p>
